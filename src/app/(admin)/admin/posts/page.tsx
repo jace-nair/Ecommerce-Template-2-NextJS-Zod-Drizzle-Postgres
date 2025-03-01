@@ -7,7 +7,7 @@ import { getUserPosts, getUserPostsCount } from "@/app/queries";
 import { Pagination } from "@/components/pagination";
 import { Button } from "@/components/ui/button";
 
-type Props = { searchParams: { page?: string } };
+type Props = { searchParams: Promise<{ page?: string }> };
 export default async function Page(props: Props) {
 	const limit = 8;
 
@@ -15,7 +15,7 @@ export default async function Page(props: Props) {
 
 	if (!currentUserData) notFound();
 
-	const page = Number(props.searchParams.page) - 1 || 0;
+	const page = Number((await props.searchParams).page) - 1 || 0;
 
 	const [userPostsCount, userPostsData] = await Promise.all([
 		getUserPostsCount(currentUserData.id),
