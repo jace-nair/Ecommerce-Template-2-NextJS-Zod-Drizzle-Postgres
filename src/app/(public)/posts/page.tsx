@@ -2,11 +2,11 @@ import { PostCards } from "@/app/(public)/_components/post-cards";
 import { getPosts, getPostsCount } from "@/app/queries";
 import { Pagination } from "@/components/pagination";
 
-type Props = { searchParams: { page?: string } };
+type Props = { searchParams: Promise<{ page?: string }> };
 export default async function Page(props: Props) {
 	const limit = 8;
 
-	const page = Number(props.searchParams.page) - 1 || 0;
+	const page = Number((await props.searchParams).page) - 1 || 0;
 
 	const [postsCount, postsData] = await Promise.all([
 		getPostsCount(),
