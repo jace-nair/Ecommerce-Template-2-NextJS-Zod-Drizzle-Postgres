@@ -1,8 +1,21 @@
 "use server";
 
-import { wait } from "@/lib/utils";
+import { revalidatePath } from "next/cache";
 
-export async function createComment(data: unknown) {
-	await wait();
-	return { success: true, message: "Comment created successfully" };
+import { db } from "@/db";
+import { comment, CommentSchemaType, commentSchema } from "@/db/schema/comment";
+import { executeAction } from "@/db/utils/executeAction";
+
+export async function createComment(data: CommentSchemaType) {
+	return executeAction({
+		actionFn: async () => {
+			const validatedData = commentSchema.parse(data);
+			await db.insert(comment).values(validatedData);
+			revalidatePath(`/posts/${validatedData.id}`);
+		},
+		isProtected: true,
+		clientSuccessMessage: "Comment created successfully",
+		serverErrorMessage: "createComment",
+	});
 }
+

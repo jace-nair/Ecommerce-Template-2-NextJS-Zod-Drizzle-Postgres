@@ -1,60 +1,92 @@
-import { wait } from "@/lib/utils";
+import { count, desc, eq, ilike } from "drizzle-orm";
+
+import { db } from "@/db";
+import { post, user } from "@/db/schema";
+import { executeQuery } from "@/db/utils/executeQuery";
 
 export async function getCategories() {
-	await wait();
-	return [
-		{
-			id: 1,
-			name: "mock category",
-		},
-	];
+	return executeQuery({
+		queryFn: async () => await db.query.category.findMany(),
+		serverErrorMessage: "getCategories",
+		isProtected: false,
+	});
 }
 
 export async function getTags() {
-	await wait();
-	return [{ id: 1, name: "mock tag" }];
+	return executeQuery({
+		queryFn: async () => await db.query.tag.findMany(),
+		serverErrorMessage: "getTags",
+		isProtected: false,
+	});
 }
 
 export async function getRelatedPostsByCategoryId(categoryId: number) {
-	await wait();
-	return [
-		{
-			id: 1,
-			updatedAt: "2024-06-23 16:05:26.954952",
-			title: "mock title",
-			shortDescription: "mock short description",
-		},
-	];
+	return executeQuery({
+		queryFn: async () =>
+			await db.query.post.findMany({
+				limit: 4,
+				where: eq(post.categoryId, categoryId),
+				columns: {
+					id: true,
+					title: true,
+					updatedAt: true,
+					shortDescription: true,
+				},
+			}),
+		serverErrorMessage: "getRelatedPostsByCategoryId",
+		isProtected: false,
+	});
 }
 
 export async function getPostsCount(searchTerm?: string) {
-	await wait();
-	return 1;
+	return executeQuery({
+		queryFn: async () =>
+			await db
+				.select({ count: count() })
+				.from(post)
+				.where(ilike(post.title, `%${searchTerm || ""}%`))
+				.then((res) => res[0].count),
+		serverErrorMessage: "getPostsCount",
+		isProtected: false,
+	});
 }
 
+// await db.query.post.findMany({
+// 	limit,
+// 	offset: page * limit,
+// 	orderBy: [desc(post.createdAt)],
+// }),
 export async function getPosts(
 	page: number,
 	limit: number,
 	searchTerm?: string
 ) {
-	await wait();
-	return [
-		{
-			id: 1,
-			updatedAt: "2024-06-23 16:05:26.954952",
-			createdAt: "2024-06-23 16:05:26.954952",
-			userId: 1,
-			title: "mock title",
-			shortDescription: "mock short description",
-			content: "mock content",
-			categoryId: 1,
-		},
-	];
+	return executeQuery({
+		queryFn: async () =>
+			db
+				.select()
+				.from(post)
+				.orderBy(desc(post.createdAt))
+				.limit(limit)
+				.offset(page * limit)
+				.where(ilike(post.title, `%${searchTerm || ""}%`)),
+
+		serverErrorMessage: "getPosts",
+		isProtected: false,
+	});
 }
 
 export async function getUserPostsCount(userId: number) {
-	await wait();
-	return 1;
+	return executeQuery({
+		queryFn: async () =>
+			await db
+				.select({ count: count() })
+				.from(post)
+				.where(eq(post.userId, userId))
+				.then((res) => res[0].count),
+		serverErrorMessage: "getUserPostsCount",
+		isProtected: false,
+	});
 }
 
 export async function getUserPosts({
@@ -66,26 +98,27 @@ export async function getUserPosts({
 	page: number;
 	userId: number;
 }) {
-	await wait();
-	return [
-		{
-			id: 1,
-			createdAt: "2024-06-23 16:05:26.954952",
-			updatedAt: "2024-06-23 16:05:26.954952",
-			userId: 1,
-			title: "mock title",
-			shortDescription: "mock short description",
-			content: "mock content",
-			categoryId: 1,
-		},
-	];
+	return executeQuery({
+		queryFn: async () =>
+			await db.query.post.findMany({
+				where: eq(post.userId, userId),
+				limit,
+				offset: limit * page,
+				orderBy: [desc(post.createdAt)],
+			}),
+		serverErrorMessage: "getUserPosts",
+		isProtected: false,
+	});
 }
 
 export async function getUser(userId: number) {
-	await wait();
-	return {
-		id: 1,
-		fullName: "mock full name",
-		email: "mock email",
-	};
+	return executeQuery({
+		queryFn: async () =>
+			await db.query.user.findFirst({
+				columns: { fullName: true, email: true, id: true },
+				where: eq(user.id, userId),
+			}),
+		serverErrorMessage: "getUser",
+		isProtected: false,
+	});
 }
